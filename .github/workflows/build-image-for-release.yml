@@ -18,6 +18,19 @@
 name: Build Docker Image For Release
 
 on:
+  # ----------------------------------------------------
+  # 💡 NEW: Manual Trigger via GitHub UI
+  # This adds the "Run workflow" button in the Actions tab.
+  workflow_dispatch:
+    # Optional: You can add inputs if you want to pass parameters manually
+    inputs:
+      branch:
+        description: 'Branch to build the Docker image from (e.g., main or v2.x)'
+        required: true
+        default: 'main'
+  # ----------------------------------------------------
+  
+  # Existing: Automatic Trigger on Git Tag Push
   push:
     tags:
       - v2.*
@@ -33,6 +46,10 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+      with:
+        # 💡 MODIFIED: Check out the branch specified in the manual input, 
+        # or use the default ref for automatic runs (like tag pushes).
+        ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.branch || github.ref }}
 
     - name: Docker meta
       id: meta
@@ -64,5 +81,3 @@ jobs:
         file: ./Dockerfile
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
-
-
