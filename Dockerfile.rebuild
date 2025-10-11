@@ -1,0 +1,48 @@
+FROM golang:1.23-alpine AS builder
+
+# Install build dependencies
+RUN apk --no-cache add build-base git bash nodejs npm
+
+# Install pnpm
+RUN npm install -g pnpm@9.7.0
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy all source code
+COPY . .
+
+# Build the application
+RUN make clean build
+
+# Final stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk --no-cache add bash ca-certificates curl dumb-init gettext openssh sqlite gnupg tzdata
+
+# Copy the built binary
+COPY --from=builder /app/answer /usr/bin/answer
+
+# Copy static files
+COPY --from=builder /app/ui/build /app/ui/build
+COPY --from=builder /app/i18n /app/i18n
+COPY --from=builder /app/script/entrypoint.sh /entrypoint.sh
+
+# Set permissions
+RUN chmod 755 /entrypoint.sh /usr/bin/answer
+
+# Create data directory
+RUN mkdir -p /data/uploads && chmod 777 /data/uploads
+
+# Set timezone
+ENV TZ=Asia/Shanghai
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+VOLUME /data
+EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]

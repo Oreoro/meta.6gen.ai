@@ -1,0 +1,27 @@
+FROM apache/answer
+
+# Copy our freelancer backend files
+COPY internal/entity/freelancer_profile_entity.go /app/internal/entity/freelancer_profile_entity.go
+COPY internal/schema/freelancer_schema.go /app/internal/schema/freelancer_schema.go
+COPY internal/repo/freelancer/ /app/internal/repo/freelancer/
+COPY internal/service/freelancer/ /app/internal/service/freelancer/
+COPY internal/controller/freelancer_controller.go /app/internal/controller/freelancer_controller.go
+COPY internal/migrations/migration_20241201_freelancer_tables.go /app/internal/migrations/migration_20241201_freelancer_tables.go
+
+# Copy modified backend files
+COPY internal/router/answer_api_router.go /app/internal/router/answer_api_router.go
+COPY internal/service/content/user_service.go /app/internal/service/content/user_service.go
+COPY internal/service/provider.go /app/internal/service/provider.go
+COPY internal/repo/provider.go /app/internal/repo/provider.go
+COPY internal/controller/controller.go /app/internal/controller/controller.go
+COPY internal/base/reason/reason.go /app/internal/base/reason/reason.go
+
+# Copy frontend files
+COPY ui/src/components/HireMeButton/ /app/ui/src/components/HireMeButton/
+COPY ui/src/pages/Users/Personal/components/UserInfo/index.tsx /app/ui/src/pages/Users/Personal/components/UserInfo/index.tsx
+COPY ui/src/utils/guard.ts /app/ui/src/utils/guard.ts
+COPY ui/src/pages/Users/Login/index.tsx /app/ui/src/pages/Users/Login/index.tsx
+COPY i18n/en_US.yaml /app/i18n/en_US.yaml
+
+# The base image already has the built application, we just need to add our files
+# and the application will pick them up
