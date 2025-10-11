@@ -22,8 +22,10 @@ LABEL maintainer="linkinstar@apache.org"
 ARG GOPROXY
 ENV GOPATH /go
 ENV GOROOT /usr/local/go
-# 🚨 CORRECTION 1: Using your actual repository path for the package ENV.
-ENV PACKAGE github.com/Oreoro/meta.6gen.ai
+
+# 1. 🚨 CRITICAL FIX for build-args: Define PACKAGE as an ARG with your path
+ARG PACKAGE=github.com/Oreoro/meta.6gen.ai
+ENV PACKAGE ${PACKAGE}
 ENV BUILD_DIR ${GOPATH}/src/${PACKAGE}
 ENV ANSWER_MODULE ${BUILD_DIR}
 
@@ -75,8 +77,8 @@ COPY --from=golang-builder /usr/bin/answer /usr/bin/answer
 # 2. Copy the configuration/i18n data
 COPY --from=golang-builder /data /data
 
-# 3. 🚨 CORRECTION 2: Copy the built UI assets (index.html, JS, CSS, etc.)
-# The path is constructed using the corrected BUILD_DIR/ui/build
+# 3. 🚨 CRITICAL FIX for UI Assets: Copy the built UI assets (index.html, JS, CSS, etc.)
+# This resolves the "open build/index.html: file does not exist" error.
 COPY --from=golang-builder ${BUILD_DIR}/ui/build /build
 
 # 4. Copy and set executable permissions on the entrypoint script
