@@ -1,17 +1,17 @@
 # Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
+# or more contributor license agreements. See the NOTICE file
 # distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
+# regarding copyright ownership. The ASF licenses this file
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
+# with the License. You may obtain a copy of the License at
 #
-#   http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
+# KIND, either express or implied. See the License for the
 # specific language governing permissions and limitations
 # under the License.
 
@@ -34,8 +34,11 @@ ARG CGO_EXTRA_CFLAGS
 
 COPY . ${BUILD_DIR}
 WORKDIR ${BUILD_DIR}
-RUN apk --no-cache add build-base git bash nodejs npm && npm install -g pnpm@9.7.0 \
-    && make clean build
+RUN apk --no-cache add build-base git bash nodejs npm \
+    && npm install -g pnpm@9.7.0 \
+    && pnpm install \
+    && make clean build \
+    && make ui  # <-- FIX 1: Add make ui to compile the front-end
 
 RUN chmod 755 answer
 RUN ["/bin/bash","-c","script/build_plugin.sh"]
@@ -44,6 +47,7 @@ RUN cp answer /usr/bin/answer
 RUN mkdir -p /data/uploads && chmod 777 /data/uploads \
     && mkdir -p /data/i18n && cp -r i18n/*.yaml /data/i18n
 
+---
 FROM alpine
 LABEL maintainer="linkinstar@apache.org"
 
@@ -66,6 +70,8 @@ RUN apk update \
 
 COPY --from=golang-builder /usr/bin/answer /usr/bin/answer
 COPY --from=golang-builder /data /data
+COPY --from=golang-builder ${BUILD_DIR}/build /usr/bin/build # <-- FIX 2: Copy the built UI files
+
 COPY /script/entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
 
