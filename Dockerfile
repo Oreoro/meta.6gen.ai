@@ -36,7 +36,7 @@ RUN mkdir -p /data/uploads /data/i18n /data/ui && \
     cp -r i18n/*.yaml /data/i18n/ && \
     cp -r ui/build/* /data/ui/ 2>/dev/null || cp -r dist/* /data/ui/ 2>/dev/null || true
 
----
+
 # Use specific Alpine version with digest for security
 FROM alpine
 LABEL maintainer="linkinstar@apache.org"
