@@ -7,16 +7,17 @@
 FROM golang:1.23-alpine AS golang-builder
 LABEL maintainer="linkinstar@apache.org"
 
-# Build arguments and environment setup
 ARG GOPROXY
-ENV GOPATH=/go \
-    GOROOT=/usr/local/go \
-    PACKAGE=github.com/oreoro/meta.6gen.ai \
-    BUILD_DIR=${GOPATH}/src/${PACKAGE}
-
+ARG PACKAGE=github.com/oreoro/meta.6gen.ai
 ARG TAGS="sqlite sqlite_unlock_notify"
-ENV TAGS="bindata timetzdata ${TAGS}"
 ARG CGO_EXTRA_CFLAGS
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+
+ENV GOPATH=/go
+ENV GOROOT=/usr/local/go
+ENV PACKAGE=${PACKAGE}
+ENV BUILD_DIR=/go/src/${PACKAGE}
+ENV TAGS="bindata timetzdata ${TAGS}"
 
 # Install build dependencies including make
 RUN apk --no-cache add \
@@ -30,13 +31,13 @@ RUN apk --no-cache add \
     rm -rf /var/cache/apk/*
 
 # Set working directory first
+RUN mkdir -p ${BUILD_DIR}
 WORKDIR ${BUILD_DIR}
 
 # Copy source code
 COPY . .
 
 # Configure npm and install dependencies
-ARG NPM_REGISTRY=https://registry.npmjs.org/
 RUN npm config set registry ${NPM_REGISTRY} && \
     npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
@@ -73,7 +74,7 @@ FROM alpine:3.19
 LABEL maintainer="linkinstar@apache.org"
 
 ARG TIMEZONE
-ENV TIMEZONE=${TIMEZONE:-"Asia/Shanghai"}
+ENV TIMEZONE=${TIMEZONE:-Asia/Shanghai}
 
 # Install runtime dependencies and configure timezone
 RUN apk update && apk --no-cache add \
@@ -98,6 +99,8 @@ RUN addgroup -g 10001 -S appgroup && \
 # Create required directories with proper permissions
 RUN mkdir -p /data/uploads /data/i18n /data/ui && \
     chown -R 10001:10001 /data
+
+# Explicitly re-declare PACKAGE in this stage if needed; usually not required unless reusing path variables.
 
 # Copy application binary and data from builder
 COPY --from=golang-builder --chown=10001:10001 /go/src/github.com/oreoro/meta.6gen.ai/answer /usr/bin/answer
