@@ -7,86 +7,112 @@
 FROM golang:1.23-alpine AS golang-builder
 LABEL maintainer="linkinstar@apache.org"
 
+# Build arguments and environment setup
 ARG GOPROXY
-ENV GOPATH /go
-ENV GOROOT /usr/local/go
-ENV PACKAGE github.com/oreoro/meta.6gen.ai
-ENV BUILD_DIR ${GOPATH}/src/${PACKAGE}
+ENV GOPATH=/go \
+    GOROOT=/usr/local/go \
+    PACKAGE=github.com/oreoro/meta.6gen.ai \
+    BUILD_DIR=${GOPATH}/src/${PACKAGE}
 
 ARG TAGS="sqlite sqlite_unlock_notify"
-ENV TAGS "bindata timetzdata $TAGS"
+ENV TAGS="bindata timetzdata ${TAGS}"
 ARG CGO_EXTRA_CFLAGS
 
-# **MODIFICATION 1: Added python3 for native Node.js modules**
-# Some pnpm packages need to compile C++ add-ons and require Python.
-RUN apk --no-cache add build-base git bash nodejs npm python3 && \
-    npm install -g pnpm@9.7.0 && \
+# Install build dependencies including make
+RUN apk --no-cache add \
+    build-base \
+    git \
+    bash \
+    nodejs \
+    npm \
+    python3 \
+    make && \
     rm -rf /var/cache/apk/*
 
-COPY . ${BUILD_DIR}
+# Set working directory first
 WORKDIR ${BUILD_DIR}
 
-# **MODIFICATION 2: Made the pnpm install step more robust and verbose**
-# Use an argument to make the registry configurable, which helps with network issues.
+# Copy source code
+COPY . .
+
+# Configure npm and install dependencies
 ARG NPM_REGISTRY=https://registry.npmjs.org/
+RUN npm config set registry ${NPM_REGISTRY} && \
+    npm config set fetch-retries 5 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 120000 && \
+    npm cache clean --force && \
+    npm install --verbose || \
+    (echo "npm install failed, retrying..." && npm install --force)
 
-# This command now does three things:
-# 1. Explicitly sets the package registry to avoid network/DNS issues.
-# 2. Cleans the pnpm cache to prevent corrupted data from stopping the build.
-# 3. Runs the install with a verbose reporter for detailed error logging.
-RUN pnpm config set registry ${NPM_REGISTRY} && \
-    pnpm cache clean && \
-    pnpm install --reporter verbose
+# Build backend Go application
+RUN make clean && make build
 
-# --- The rest of the build process remains separated for clarity ---
-# 2. Build backend Go application
-RUN make clean build
-
-# 3. Build frontend UI
+# Build frontend UI
 RUN make ui
 
-# 4. Finalize build artifacts (permissions and plugin script)
+# Prepare build artifacts
 RUN chmod 755 answer && \
-    /bin/bash -c "script/build_plugin.sh"
+    if [ -f "script/build_plugin.sh" ]; then \
+        bash script/build_plugin.sh; \
+    fi
 
-# 5. Prepare runtime directories and copy all necessary assets
+# Create runtime directories and copy assets
 RUN mkdir -p /data/uploads /data/i18n /data/ui && \
-    cp -r i18n/*.yaml /data/i18n/ && \
-    cp -r ui/build/* /data/ui/ 2>/dev/null || cp -r dist/* /data/ui/ 2>/dev/null || true
+    if [ -d "i18n" ]; then cp -r i18n/*.yaml /data/i18n/ 2>/dev/null || true; fi && \
+    if [ -d "ui/build" ]; then \
+        cp -r ui/build/* /data/ui/; \
+    elif [ -d "dist" ]; then \
+        cp -r dist/* /data/ui/; \
+    else \
+        echo "Warning: No UI build artifacts found"; \
+    fi
 
-
-# --- FINAL IMAGE STAGE (No changes needed here, it follows best practices) ---
-FROM alpine
+# --- FINAL IMAGE STAGE ---
+FROM alpine:3.19
 LABEL maintainer="linkinstar@apache.org"
 
 ARG TIMEZONE
 ENV TIMEZONE=${TIMEZONE:-"Asia/Shanghai"}
 
-# Security hardening and package installation
+# Install runtime dependencies and configure timezone
 RUN apk update && apk --no-cache add \
-        bash ca-certificates curl dumb-init \
-        gettext openssh sqlite gnupg tzdata \
-    && ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
-    && echo "${TIMEZONE}" > /etc/timezone \
-    && sed -i -e 's/^root::/root:!:/' /etc/shadow \
-    && rm -rf /var/cache/apk/*
+        bash \
+        ca-certificates \
+        curl \
+        dumb-init \
+        gettext \
+        openssh \
+        sqlite \
+        gnupg \
+        tzdata && \
+    ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime && \
+    echo "${TIMEZONE}" > /etc/timezone && \
+    sed -i -e 's/^root::/root:!:/' /etc/shadow && \
+    rm -rf /var/cache/apk/*
 
-# Create non-root user for better security
+# Create non-root user for security
 RUN addgroup -g 10001 -S appgroup && \
     adduser -u 10001 -S appuser -G appgroup
 
-# Copy application binary and data from the builder stage
-COPY --from=golang-builder ${BUILD_DIR}/answer /usr/bin/answer
-COPY --from=golang-builder /data /data
-COPY /script/entrypoint.sh /entrypoint.sh
+# Create required directories with proper permissions
+RUN mkdir -p /data/uploads /data/i18n /data/ui && \
+    chown -R 10001:10001 /data
 
-# Set proper ownership and permissions for the non-root user
-RUN chmod 755 /entrypoint.sh && \
-    chown -R 10001:10001 /data /usr/bin/answer
+# Copy application binary and data from builder
+COPY --from=golang-builder --chown=10001:10001 /go/src/github.com/oreoro/meta.6gen.ai/answer /usr/bin/answer
+COPY --from=golang-builder --chown=10001:10001 /data /data
 
-# Switch to the non-root user
+# Copy entrypoint script if it exists
+COPY --chown=10001:10001 script/entrypoint.sh /entrypoint.sh
+RUN chmod 755 /entrypoint.sh
+
+# Switch to non-root user
 USER 10001:10001
 
 VOLUME /data
-EXPOSE 80
+
+# Use port 8080 instead of 80 for non-root user
+EXPOSE 8080
+
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint.sh"]
