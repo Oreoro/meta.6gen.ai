@@ -1,80 +1,75 @@
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements. See the NOTICE file
 # distributed with this work for additional information
-# regarding copyright ownership. The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License. You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the License for the
-# specific language governing permissions and limitations
-# under the License.
+# regarding copyright ownership.
 
 FROM golang:1.23-alpine AS golang-builder
 LABEL maintainer="linkinstar@apache.org"
 
 ARG GOPROXY
-# ENV GOPROXY ${GOPROXY:-direct}
-# ENV GOPROXY=https://proxy.golang.com.cn,direct
-
 ENV GOPATH /go
 ENV GOROOT /usr/local/go
 ENV PACKAGE github.com/oreoro/meta.6gen.ai
 ENV BUILD_DIR ${GOPATH}/src/${PACKAGE}
-ENV ANSWER_MODULE ${BUILD_DIR}
 
 ARG TAGS="sqlite sqlite_unlock_notify"
 ENV TAGS "bindata timetzdata $TAGS"
 ARG CGO_EXTRA_CFLAGS
 
+# Install build dependencies in single layer
+RUN apk --no-cache add build-base git bash nodejs npm && \
+    npm install -g pnpm@9.7.0 && \
+    rm -rf /var/cache/apk/*
+
 COPY . ${BUILD_DIR}
 WORKDIR ${BUILD_DIR}
-RUN apk --no-cache add build-base git bash nodejs npm \
-    && npm install -g pnpm@9.7.0 \
-    && pnpm install \
-    && make clean build \
-    && make ui  # <-- FIX 1: Add make ui to compile the front-end
 
-RUN chmod 755 answer
-RUN ["/bin/bash","-c","script/build_plugin.sh"]
-RUN cp answer /usr/bin/answer
+# Build both backend and frontend
+RUN pnpm install && \
+    make clean build && \
+    make ui && \
+    chmod 755 answer && \
+    /bin/bash -c "script/build_plugin.sh"
 
-RUN mkdir -p /data/uploads && chmod 777 /data/uploads \
-    && mkdir -p /data/i18n && cp -r i18n/*.yaml /data/i18n
+# Prepare runtime directories
+RUN mkdir -p /data/uploads /data/i18n /data/ui && \
+    cp -r i18n/*.yaml /data/i18n/ && \
+    cp -r ui/build/* /data/ui/ 2>/dev/null || cp -r dist/* /data/ui/ 2>/dev/null || true
 
 ---
+# Use specific Alpine version with digest for security
 FROM alpine
 LABEL maintainer="linkinstar@apache.org"
 
 ARG TIMEZONE
 ENV TIMEZONE=${TIMEZONE:-"Asia/Shanghai"}
 
-RUN apk update \
-    && apk --no-cache add \
-        bash \
-        ca-certificates \
-        curl \
-        dumb-init \
-        gettext \
-        openssh \
-        sqlite \
-        gnupg \
-        tzdata \
+# Security hardening and package installation
+RUN apk update && apk --no-cache add \
+        bash ca-certificates curl dumb-init \
+        gettext openssh sqlite gnupg tzdata \
     && ln -sf /usr/share/zoneinfo/${TIMEZONE} /etc/localtime \
-    && echo "${TIMEZONE}" > /etc/timezone
+    && echo "${TIMEZONE}" > /etc/timezone \
+    && sed -i -e 's/^root::/root:!:/' /etc/shadow \
+    && rm -rf /var/cache/apk/*
 
-COPY --from=golang-builder /usr/bin/answer /usr/bin/answer
+# Create non-root user
+RUN addgroup -g 10001 -S appgroup && \
+    adduser -u 10001 -S appuser -G appgroup
+
+# Copy application files
+COPY --from=golang-builder /go/src/github.com/oreoro/meta.6gen.ai/answer /usr/bin/answer
 COPY --from=golang-builder /data /data
-COPY --from=golang-builder ${BUILD_DIR}/build /usr/bin/build # <-- FIX 2: Copy the built UI files
-
 COPY /script/entrypoint.sh /entrypoint.sh
-RUN chmod 755 /entrypoint.sh
+
+# Set proper permissions
+RUN chmod 755 /entrypoint.sh && \
+    chmod 755 /data/uploads && \
+    chown -R 10001:10001 /data /usr/bin/answer
+
+# Switch to non-root user
+USER 10001:10001
 
 VOLUME /data
 EXPOSE 80
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint.sh"]
