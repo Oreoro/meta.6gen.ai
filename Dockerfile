@@ -46,7 +46,7 @@ RUN npm config set registry "${NPM_REGISTRY:-https://registry.npmjs.org/}" && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set legacy-peer-deps true && \
     npm cache clean --force && \
-    npm install -g pnpm@9
+    npm install -g pnpm@9 || (npm install -g corepack && corepack enable && corepack prepare pnpm@9 --activate)
 
 # Install using lockfile when available
 COPY ui/package*.json ./
