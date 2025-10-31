@@ -49,8 +49,10 @@ RUN npm config set registry "${NPM_REGISTRY:-https://registry.npmjs.org/}" && \
 
 # Install using lockfile when available
 COPY ui/package*.json ./
-RUN (npm ci --no-audit --no-fund --legacy-peer-deps --loglevel=error || \
-     npm install --no-audit --no-fund --legacy-peer-deps --loglevel=error)
+# Use npm install universally to avoid environments lacking `npm ci`
+RUN npm install --no-audit --no-fund --legacy-peer-deps --loglevel=error || \
+    (echo "npm install failed, retrying with forced legacy peer deps" && \
+     npm install --no-audit --no-fund --legacy-peer-deps --force --loglevel=error)
 
 # Copy UI sources after dependencies to leverage layer caching
 COPY ui/ ./
