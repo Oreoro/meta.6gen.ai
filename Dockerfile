@@ -45,12 +45,21 @@ RUN npm config set registry "${NPM_REGISTRY:-https://registry.npmjs.org/}" && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set legacy-peer-deps true && \
+<<<<<<< Current (Your changes)
     npm cache clean --force && \
     npm install -g pnpm@9 || (npm install -g corepack && corepack enable && corepack prepare pnpm@9 --activate)
 
 # Install using lockfile when available
 COPY ui/package*.json ./
 # Use npm install universally to avoid environments lacking `npm ci`
+=======
+    npm config set ignore-scripts true && \
+    npm cache clean --force
+
+# Install using lockfile when available
+COPY ui/package*.json ./
+# Use npm install universally (skip prepare scripts) to avoid QEMU/pnpm issues
+>>>>>>> Incoming (Background Agent changes)
 RUN npm install --no-audit --no-fund --legacy-peer-deps --loglevel=error || \
     (echo "npm install failed, retrying with forced legacy peer deps" && \
      npm install --no-audit --no-fund --legacy-peer-deps --force --loglevel=error)
