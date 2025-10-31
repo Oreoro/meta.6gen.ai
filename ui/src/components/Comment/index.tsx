@@ -46,7 +46,7 @@ import {
 import { commentReplyStore } from '@/stores';
 import Reactions from '@/pages/Questions/Detail/components/Reactions';
 import HireMeButton from '@/components/HireMeButton';
-import { useHasFreelancerProfile } from '@/context/FreelancerContext';
+import { useFreelancerContext } from '@/context/FreelancerContext';
 import { loggedUserInfoStore } from '@/stores';
 
 import { Form, ActionBar, Reply } from './components';
@@ -77,6 +77,17 @@ const Comment = ({ objectId, mode, commentId }) => {
 
   const { t } = useTranslation('translation', { keyPrefix: 'comment' });
   const sessionUser = loggedUserInfoStore((state) => state.user);
+  const { hasProfile, ensureProfileLoaded } = useFreelancerContext();
+  // Preload freelancer presence for all commenters on list updates
+  useEffect(() => {
+    const ids: string[] = [];
+    comments.forEach((c) => {
+      if (c?.user_id) {
+        ids.push(c.user_id);
+      }
+    });
+    Array.from(new Set(ids)).forEach((id) => ensureProfileLoaded(id));
+  }, [comments, ensureProfileLoaded]);
 
   useEffect(() => {
     if (pageIndex === 0 && commentId && comments.length !== 0) {
@@ -389,7 +400,7 @@ const Comment = ({ objectId, mode, commentId }) => {
           comments.length > 0 && 'bg-light px-3 py-2 rounded',
         )}>
         {comments.map((item) => {
-          const commenterHasProfile = useHasFreelancerProfile(item.user_id);
+          const commenterHasProfile = hasProfile(item.user_id);
           return (
             <div
               key={item.comment_id}
