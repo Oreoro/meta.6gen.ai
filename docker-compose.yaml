@@ -22,10 +22,16 @@ services:
       context: .
       dockerfile: Dockerfile.rebuild
     ports:
-      - '9080:80'
+      - '8080:8080'
     restart: on-failure
     volumes:
-      - answer-data:/data
+      - answer-uploads:/data/uploads
+      - answer-i18n:/data/i18n
+      - answer-config:/data/config
+      - answer-logs:/data/logs
 
 volumes:
-  answer-data:
+  answer-uploads:
+  answer-i18n:
+  answer-config:
+  answer-logs:
