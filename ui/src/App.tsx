@@ -24,6 +24,7 @@ import './i18n/init';
 import '@/utils/pluginKit';
 import { useMergeRoutes } from '@/router';
 import InitialLoadingPlaceholder from '@/components/InitialLoadingPlaceholder';
+import { FreelancerProvider } from '@/context/FreelancerContext';
 
 function App() {
   const routes = useMergeRoutes();
@@ -33,7 +34,11 @@ function App() {
   const router = createBrowserRouter(routes, {
     basename: process.env.REACT_APP_BASE_URL,
   });
-  return <RouterProvider router={router} />;
+  return (
+    <FreelancerProvider>
+      <RouterProvider router={router} />
+    </FreelancerProvider>
+  );
 }
 
 export default App;

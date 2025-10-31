@@ -173,15 +173,43 @@ func (fs *FreelancerService) UpdateFreelancerProfile(ctx context.Context, req *s
 
 // GetFreelancerProfile get freelancer profile
 func (fs *FreelancerService) GetFreelancerProfile(ctx context.Context, req *schema.GetFreelancerProfileReq) (*schema.FreelancerProfileResp, error) {
-	profile, exist, err := fs.freelancerRepo.GetFreelancerProfileByUserID(ctx, req.UserID)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, errors.NotFound(reason.FreelancerProfileNotFound)
-	}
+    profile, exist, err := fs.freelancerRepo.GetFreelancerProfileByUserID(ctx, req.UserID)
+    if err != nil {
+        return nil, err
+    }
+    if !exist {
+        // Everyone is a freelancer by default: synthesize a default profile from user data
+        userInfo, uExist, uErr := fs.userRepo.GetByUserID(ctx, req.UserID)
+        if uErr != nil {
+            return nil, uErr
+        }
+        if !uExist {
+            return nil, errors.NotFound(reason.UserNotFound)
+        }
+        // Build a virtual profile without persisting
+        defaultProfile := &entity.FreelancerProfile{
+            UserID:            userInfo.ID,
+            IsAvailable:       true,
+            HourlyRate:        0,
+            Currency:          "USD",
+            Skills:            "[]",
+            Experience:        userInfo.Bio,
+            Portfolio:         "[]",
+            Availability:      "Project-based",
+            PreferredProjects: "[]",
+            ContactEmail:      userInfo.EMail,
+            LinkedInProfile:   "",
+            GitHubProfile:     "",
+            Website:           userInfo.Website,
+            Bio:               userInfo.Bio,
+            Languages:         "[]",
+            TimeZone:          "",
+            ResponseTime:      "Within 24 hours",
+        }
+        return fs.convertFreelancerProfileToResp(defaultProfile), nil
+    }
 
-	return fs.convertFreelancerProfileToResp(profile), nil
+    return fs.convertFreelancerProfileToResp(profile), nil
 }
 
 // GetFreelancerProfiles get freelancer profiles
@@ -310,14 +338,11 @@ func (fs *FreelancerService) HireFreelancer(ctx context.Context, req *schema.Hir
 		return nil, errors.NotFound(reason.UserNotFound)
 	}
 
-	// Get freelancer profile
-	freelancerProfile, exist, err := fs.freelancerRepo.GetFreelancerProfileByUserID(ctx, req.FreelancerUserID)
-	if err != nil {
-		return nil, err
-	}
-	if !exist {
-		return nil, errors.NotFound(reason.FreelancerProfileNotFound)
-	}
+    // Get freelancer profile (optional). If not exists, fall back to user email.
+    freelancerProfile, exist, err := fs.freelancerRepo.GetFreelancerProfileByUserID(ctx, req.FreelancerUserID)
+    if err != nil {
+        return nil, err
+    }
 
 	// Get current user info
 	currentUser, exist, err := fs.userRepo.GetByUserID(ctx, req.LoginUserID)
@@ -335,10 +360,10 @@ func (fs *FreelancerService) HireFreelancer(ctx context.Context, req *schema.Hir
 	}
 
 	// Prepare email
-	contactEmail := freelancerUser.EMail
-	if freelancerProfile.ContactEmail != "" {
-		contactEmail = freelancerProfile.ContactEmail
-	}
+    contactEmail := freelancerUser.EMail
+    if exist && freelancerProfile.ContactEmail != "" {
+        contactEmail = freelancerProfile.ContactEmail
+    }
 
 	// Send hiring email
 	subject := req.Subject

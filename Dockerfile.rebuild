@@ -40,8 +40,8 @@ RUN chmod 755 /entrypoint.sh /usr/bin/answer
 RUN mkdir -p /data/uploads && chmod 777 /data/uploads
 
 # Set timezone
-ENV TZ=Asia/Shanghai
-RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+ENV TZ=Asia/Karachi
+RUN ln -sf /usr/share/zoneinfo/Asia/Karachi /etc/localtime
 
 VOLUME /data
 EXPOSE 80

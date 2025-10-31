@@ -422,3 +422,59 @@ img[src=''] {
   display: none;
   line-height: 1;
 }
+
+/* Earthy green theme overrides (CSS variables for Bootstrap 5) */
+:root {
+  --brand-green-50: #eef5ee;
+  --brand-green-100: #d8e8da;
+  --brand-green-300: #96be9d;
+  --brand-green-500: #2f6b3a; /* primary */
+  --brand-green-600: #285c32;
+  --brand-green-700: #214d2a;
+
+  --bs-primary: var(--brand-green-500);
+  --bs-primary-rgb: 47, 107, 58;
+  --bs-success: var(--brand-green-500);
+  --bs-success-rgb: 47, 107, 58;
+  --bs-link-color: var(--brand-green-500);
+  --bs-link-hover-color: var(--brand-green-600);
+  --bs-focus-ring-color: rgba(var(--bs-primary-rgb), 0.25);
+}
+
+[data-bs-theme='dark'] {
+  --bs-primary: var(--brand-green-300);
+  --bs-primary-rgb: 150, 190, 157;
+  --bs-success: var(--brand-green-300);
+  --bs-success-rgb: 150, 190, 157;
+  --bs-link-color: var(--brand-green-300);
+  --bs-link-hover-color: #b0d0b5;
+}
+
+.btn-success,
+.btn-success:disabled,
+.btn-success:focus {
+  --bs-btn-bg: var(--bs-success);
+  --bs-btn-border-color: var(--bs-success);
+  --bs-btn-hover-bg: var(--brand-green-600);
+  --bs-btn-hover-border-color: var(--brand-green-600);
+  --bs-btn-active-bg: var(--brand-green-700);
+  --bs-btn-active-border-color: var(--brand-green-700);
+}
+
+.btn-primary,
+.btn-primary:disabled,
+.btn-primary:focus {
+  --bs-btn-bg: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: var(--brand-green-600);
+  --bs-btn-hover-border-color: var(--brand-green-600);
+  --bs-btn-active-bg: var(--brand-green-700);
+  --bs-btn-active-border-color: var(--brand-green-700);
+}
+
+a {
+  color: var(--bs-link-color);
+}
+a:hover {
+  color: var(--bs-link-hover-color);
+}
