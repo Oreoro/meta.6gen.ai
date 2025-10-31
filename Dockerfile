@@ -37,14 +37,26 @@ WORKDIR ${BUILD_DIR}
 # Copy source code
 COPY . .
 
-# Configure npm and install dependencies
-RUN npm config set registry ${NPM_REGISTRY} && \
+# Configure npm and install UI dependencies with sensible defaults and retries
+ENV NODE_OPTIONS=--max-old-space-size=4096
+WORKDIR ${BUILD_DIR}/ui
+RUN npm config set registry "${NPM_REGISTRY:-https://registry.npmjs.org/}" && \
     npm config set fetch-retries 5 && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
-    npm cache clean --force && \
-    npm install --verbose || \
-    (echo "npm install failed, retrying..." && npm install --force)
+    npm config set legacy-peer-deps true && \
+    npm cache clean --force
+
+# Install using lockfile when available
+COPY ui/package*.json ./
+RUN (npm ci --no-audit --no-fund --legacy-peer-deps --loglevel=error || \
+     npm install --no-audit --no-fund --legacy-peer-deps --loglevel=error)
+
+# Copy UI sources after dependencies to leverage layer caching
+COPY ui/ ./
+
+# Return to repository root for Go build and make targets
+WORKDIR ${BUILD_DIR}
 
 # Build backend Go application
 RUN make clean && make build
