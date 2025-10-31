@@ -73,7 +73,14 @@ const HireMeButton: React.FC<Props> = ({
         💼 {t('hire.button_text')}
       </Button>
 
-      <Modal show={showModal} onHide={handleClose} size="lg">
+      <Modal
+        show={showModal}
+        onHide={loading ? undefined : handleClose}
+        size="lg"
+        centered
+        keyboard={!loading}
+        backdrop={loading ? 'static' : true}
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             {t('hire.modal_title', { name: freelancerDisplayName })}
@@ -93,6 +100,7 @@ const HireMeButton: React.FC<Props> = ({
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={t('hire.subject_placeholder')}
+                autoFocus
                 required
               />
             </Form.Group>

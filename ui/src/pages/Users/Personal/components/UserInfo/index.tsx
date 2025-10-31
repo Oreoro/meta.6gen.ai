@@ -25,6 +25,7 @@ import { Link } from 'react-router-dom';
 import classnames from 'classnames';
 
 import { Avatar, Icon, SvgIcon } from '@/components';
+import { useHasFreelancerProfile } from '@/context/FreelancerContext';
 import HireMeButton from '@/components/HireMeButton';
 import type { UserInfoRes } from '@/common/interface';
 import { getUcBranding, UcBrandingEntry } from '@/services';
@@ -39,7 +40,7 @@ const Index: FC<Props> = ({ data }) => {
   const { agent: ucAgent } = userCenterStore();
   const sessionUser = loggedUserInfoStore((state) => state.user);
   const [ucBranding, setUcBranding] = useState<UcBrandingEntry[]>([]);
-  const [hasFreelancerProfile, setHasFreelancerProfile] = useState(false);
+  const hasFreelancerProfile = useHasFreelancerProfile(data?.id);
 
   const initData = () => {
     if (ucAgent?.enabled && data?.username) {
@@ -50,12 +51,7 @@ const Index: FC<Props> = ({ data }) => {
       });
     }
 
-    // Check if user has freelancer profile
-    if (data?.id) {
-      // This would be an API call to check freelancer profile
-      // For now, we'll assume it exists if user has high reputation
-      setHasFreelancerProfile(data.rank > 100);
-    }
+    // freelancer profile check handled by context hook
   };
 
   useEffect(() => {

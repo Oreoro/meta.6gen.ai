@@ -45,6 +45,9 @@ import {
 } from '@/services';
 import { commentReplyStore } from '@/stores';
 import Reactions from '@/pages/Questions/Detail/components/Reactions';
+import HireMeButton from '@/components/HireMeButton';
+import { useHasFreelancerProfile } from '@/context/FreelancerContext';
+import { loggedUserInfoStore } from '@/stores';
 
 import { Form, ActionBar, Reply } from './components';
 
@@ -73,6 +76,7 @@ const Comment = ({ objectId, mode, commentId }) => {
   const vCaptcha = useCaptchaPlugin('vote');
 
   const { t } = useTranslation('translation', { keyPrefix: 'comment' });
+  const sessionUser = loggedUserInfoStore((state) => state.user);
 
   useEffect(() => {
     if (pageIndex === 0 && commentId && comments.length !== 0) {
@@ -385,6 +389,7 @@ const Comment = ({ objectId, mode, commentId }) => {
           comments.length > 0 && 'bg-light px-3 py-2 rounded',
         )}>
         {comments.map((item) => {
+          const commenterHasProfile = useHasFreelancerProfile(item.user_id);
           return (
             <div
               key={item.comment_id}
@@ -444,6 +449,15 @@ const Comment = ({ objectId, mode, commentId }) => {
                     handleVote(item.comment_id, item.is_vote);
                   }}
                 />
+              )}
+              {commenterHasProfile && sessionUser?.id !== item.user_id && (
+                <div className="mt-1">
+                  <HireMeButton
+                    freelancerUserId={item.user_id}
+                    freelancerDisplayName={item.user_display_name}
+                    className="btn-sm"
+                  />
+                </div>
               )}
             </div>
           );

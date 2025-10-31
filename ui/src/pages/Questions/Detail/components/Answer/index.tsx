@@ -36,6 +36,9 @@ import { scrollToElementTop, bgFadeOut } from '@/utils';
 import { AnswerItem } from '@/common/interface';
 import { acceptanceAnswer } from '@/services';
 import { useRenderHtmlPlugin } from '@/utils/pluginKit';
+import HireMeButton from '@/components/HireMeButton';
+import { useHasFreelancerProfile } from '@/context/FreelancerContext';
+import { loggedUserInfoStore } from '@/stores';
 
 interface Props {
   data: AnswerItem;
@@ -59,6 +62,8 @@ const Index: FC<Props> = ({
   });
   const [searchParams] = useSearchParams();
   const answerRef = useRef<HTMLDivElement>(null);
+  const sessionUser = loggedUserInfoStore((state) => state.user);
+  const authorHasFreelancerProfile = useHasFreelancerProfile(data?.user_info?.id);
 
   useRenderHtmlPlugin(answerRef.current?.querySelector('.fmt') as HTMLElement);
 
@@ -201,6 +206,14 @@ const Index: FC<Props> = ({
             isLogged={isLogged}
             timelinePath={`/posts/${data.question_id}/${data.id}/timeline`}
           />
+          {authorHasFreelancerProfile && sessionUser?.id !== data?.user_info?.id && (
+            <div className="mt-2">
+              <HireMeButton
+                freelancerUserId={data?.user_info?.id}
+                freelancerDisplayName={data?.user_info?.display_name}
+              />
+            </div>
+          )}
         </div>
       </div>
 
