@@ -67,8 +67,9 @@ RUN make clean && make build
 # Build frontend UI
 RUN make ui
 
-# Prepare build artifacts
-RUN chmod 755 answer && \
+# Prepare build artifacts (normalize binary name)
+RUN if [ -f "new_answer" ]; then mv new_answer answer; fi && \
+    chmod 755 answer && \
     if [ -f "script/build_plugin.sh" ]; then \
         bash script/build_plugin.sh; \
     fi
