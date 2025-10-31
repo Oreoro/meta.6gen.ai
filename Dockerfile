@@ -45,7 +45,8 @@ RUN npm config set registry "${NPM_REGISTRY:-https://registry.npmjs.org/}" && \
     npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set legacy-peer-deps true && \
-    npm cache clean --force
+    npm cache clean --force && \
+    npm install -g pnpm@8
 
 # Install using lockfile when available
 COPY ui/package*.json ./
