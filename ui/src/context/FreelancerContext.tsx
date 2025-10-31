@@ -31,7 +31,12 @@ const FreelancerContext = createContext<FreelancerContextValue | null>(null);
 
 export const FreelancerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [presence, setPresence] = useState<PresenceMap>({});
+  const presenceRef = useRef<PresenceMap>({});
   const inFlight = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    presenceRef.current = presence;
+  }, [presence]);
 
   const hasProfile = useCallback(
     (userId: string | undefined) => {
@@ -47,7 +52,7 @@ export const FreelancerProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!userId) {
       return;
     }
-    if (userId in presence) {
+    if (presenceRef.current[userId] !== undefined) {
       return;
     }
     if (inFlight.current.has(userId)) {
@@ -65,7 +70,7 @@ export const FreelancerProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       .finally(() => {
         inFlight.current.delete(userId);
       });
-  }, [presence]);
+  }, []);
 
   const value = useMemo(() => ({ hasProfile, ensureProfileLoaded }), [hasProfile, ensureProfileLoaded]);
 
