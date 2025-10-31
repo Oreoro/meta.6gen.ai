@@ -90,6 +90,7 @@ LABEL maintainer="linkinstar@apache.org"
 
 ARG TIMEZONE
 ENV TIMEZONE=${TIMEZONE:-Asia/Shanghai}
+ARG PACKAGE=github.com/oreoro/meta.6gen.ai
 
 # Install runtime dependencies and configure timezone
 RUN apk update && apk --no-cache add \
@@ -118,7 +119,7 @@ RUN mkdir -p /data/uploads /data/i18n /data/ui && \
 # Explicitly re-declare PACKAGE in this stage if needed; usually not required unless reusing path variables.
 
 # Copy application binary and data from builder
-COPY --from=golang-builder --chown=10001:10001 /go/src/github.com/oreoro/meta.6gen.ai/answer /usr/bin/answer
+COPY --from=golang-builder --chown=10001:10001 /go/src/${PACKAGE}/answer /usr/bin/answer
 COPY --from=golang-builder --chown=10001:10001 /data /data
 
 # Copy entrypoint script if it exists
