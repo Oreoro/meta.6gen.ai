@@ -34,8 +34,9 @@ RUN apk --no-cache add \
 RUN mkdir -p ${BUILD_DIR}
 WORKDIR ${BUILD_DIR}
 
-# Copy source code
-COPY . .
+# Copy Go mod files first for better caching
+COPY go.mod go.sum ./
+RUN go mod download
 
 # Configure npm and install UI dependencies with sensible defaults and retries
 ENV NODE_OPTIONS=--max-old-space-size=4096
@@ -48,30 +49,36 @@ RUN npm config set registry "${NPM_REGISTRY:-https://registry.npmjs.org/}" && \
     npm config set ignore-scripts true && \
     npm cache clean --force
 
-# Install using lockfile when available
+# Copy UI package files first for better dependency caching
 COPY ui/package*.json ./
 # Use npm install universally (skip prepare scripts) to avoid QEMU/pnpm issues
 RUN npm install --no-audit --no-fund --legacy-peer-deps --loglevel=error || \
     (echo "npm install failed, retrying with forced legacy peer deps" && \
      npm install --no-audit --no-fund --legacy-peer-deps --force --loglevel=error)
 
-# Copy UI sources after dependencies to leverage layer caching
-COPY ui/ ./
-
-# Return to repository root for Go build and make targets
+# Return to repository root and copy all source code
 WORKDIR ${BUILD_DIR}
+COPY . .
 
 # Build backend Go application
 RUN make clean && make build
 
-# Build frontend UI
-RUN make ui
+# Build frontend UI (use npm directly instead of pnpm via make ui)
+WORKDIR ${BUILD_DIR}/ui
+RUN npm run build
+WORKDIR ${BUILD_DIR}
 
 # Prepare build artifacts (normalize binary name)
 RUN if [ -f "new_answer" ]; then mv new_answer answer; fi && \
     chmod 755 answer && \
     if [ -f "script/build_plugin.sh" ]; then \
         bash script/build_plugin.sh; \
+    fi && \
+    if [ ! -f "script/entrypoint.sh" ]; then \
+        mkdir -p script && \
+        echo '#!/bin/sh' > script/entrypoint.sh && \
+        echo 'exec /usr/bin/answer "$@"' >> script/entrypoint.sh && \
+        chmod +x script/entrypoint.sh; \
     fi
 
 # Create runtime directories and copy assets
@@ -123,9 +130,13 @@ RUN mkdir -p /data/uploads /data/i18n /data/ui && \
 COPY --from=golang-builder --chown=10001:10001 /go/src/${PACKAGE}/answer /usr/bin/answer
 COPY --from=golang-builder --chown=10001:10001 /data /data
 
-# Copy entrypoint script if it exists
-COPY --chown=10001:10001 script/entrypoint.sh /entrypoint.sh
+# Copy entrypoint script (always exists after builder stage preparation)
+COPY --from=golang-builder --chown=10001:10001 /go/src/${PACKAGE}/script/entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
+
+# Copy verification script (for host-side verification, also included in image for reference)
+COPY --from=golang-builder --chown=10001:10001 /go/src/${PACKAGE}/verify_custom_ui.sh /usr/local/bin/verify_custom_ui.sh
+RUN chmod 755 /usr/local/bin/verify_custom_ui.sh
 
 # Switch to non-root user
 USER 10001:10001

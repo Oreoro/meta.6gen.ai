@@ -17,7 +17,16 @@
  * under the License.
  */
 
-import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+} from 'react';
+
 import request from '@/utils/request';
 
 type PresenceMap = Record<string, boolean>;
@@ -29,7 +38,9 @@ interface FreelancerContextValue {
 
 const FreelancerContext = createContext<FreelancerContextValue | null>(null);
 
-export const FreelancerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const FreelancerProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [presence, setPresence] = useState<PresenceMap>({});
   const presenceRef = useRef<PresenceMap>({});
   const inFlight = useRef<Set<string>>(new Set());
@@ -72,15 +83,24 @@ export const FreelancerProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       });
   }, []);
 
-  const value = useMemo(() => ({ hasProfile, ensureProfileLoaded }), [hasProfile, ensureProfileLoaded]);
+  const value = useMemo(
+    () => ({ hasProfile, ensureProfileLoaded }),
+    [hasProfile, ensureProfileLoaded],
+  );
 
-  return <FreelancerContext.Provider value={value}>{children}</FreelancerContext.Provider>;
+  return (
+    <FreelancerContext.Provider value={value}>
+      {children}
+    </FreelancerContext.Provider>
+  );
 };
 
 export function useFreelancerContext() {
   const ctx = useContext(FreelancerContext);
   if (!ctx) {
-    throw new Error('useFreelancerContext must be used within FreelancerProvider');
+    throw new Error(
+      'useFreelancerContext must be used within FreelancerProvider',
+    );
   }
   return ctx;
 }
@@ -92,5 +112,3 @@ export function useHasFreelancerProfile(userId: string | undefined) {
   }, [userId, ensureProfileLoaded]);
   return hasProfile(userId);
 }
-
-

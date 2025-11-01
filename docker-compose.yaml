@@ -15,23 +15,63 @@
 # specific language governing permissions and limitations
 # under the License.
 
-version: "3"
 services:
   answer:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: oreoro/answer:latest
     ports:
-      - '8080:8080'
+      - '8081:8080'
     restart: on-failure
+    environment:
+      DB_TYPE: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: answer
+      DB_USER: answer
+      DB_PASSWORD: secret
+      TIMEZONE: Asia/Karachi
+      INSTALL_PORT: "8080"
+      SITE_ADDR: "0.0.0.0:8080"
+      ANSWER_STATIC_PATH: "/data/ui"
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - answer-uploads:/data/uploads
       - answer-i18n:/data/i18n
-      - answer-config:/data/config
-      - answer-logs:/data/logs
+      - answer-conf:/data/conf
+      - answer-cache:/data/cache
+      # Mount local UI build directory for custom UI (overrides image UI)
+      - ./ui/build:/data/ui:ro
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        # Fix volume permissions on startup (run as root)
+        chown -R 10001:10001 /data/conf /data/cache /data/uploads /data/i18n 2>/dev/null || true
+        # Switch to non-root user and execute original entrypoint
+        exec su -s /bin/sh appuser -c "/usr/bin/dumb-init -- /entrypoint.sh"
+
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: answer
+      MARIADB_USER: answer
+      MARIADB_PASSWORD: secret
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   answer-uploads:
   answer-i18n:
-  answer-config:
-  answer-logs:
+  answer-conf:
+  answer-cache:
+  db-data:

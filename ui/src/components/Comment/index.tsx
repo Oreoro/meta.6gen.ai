@@ -43,11 +43,10 @@ import {
   updateComment,
   postVote,
 } from '@/services';
-import { commentReplyStore } from '@/stores';
+import { commentReplyStore, loggedUserInfoStore } from '@/stores';
 import Reactions from '@/pages/Questions/Detail/components/Reactions';
 import HireMeButton from '@/components/HireMeButton';
 import { useFreelancerContext } from '@/context/FreelancerContext';
-import { loggedUserInfoStore } from '@/stores';
 
 import { Form, ActionBar, Reply } from './components';
 

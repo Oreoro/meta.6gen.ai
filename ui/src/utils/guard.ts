@@ -84,7 +84,7 @@ export const deriveLoginState = (): TLoginState => {
   }
   // Skip email verification for local testing
   if (ls.isLogged && user.mail_status === 2) {
-    ls.isActivated = true;  // Treat as activated instead of not activated
+    ls.isActivated = true; // Treat as activated instead of not activated
   }
 
   if (ls.isActivated) {

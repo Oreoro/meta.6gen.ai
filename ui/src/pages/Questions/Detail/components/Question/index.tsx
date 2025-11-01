@@ -55,7 +55,9 @@ const Index: FC<Props> = ({ data, initPage, hasAnswer, isLogged }) => {
   const [searchParams] = useSearchParams();
   const [followed, setFollowed] = useState(data?.is_followed);
   const ref = useRef<HTMLDivElement>(null);
-  const authorHasFreelancerProfile = useHasFreelancerProfile(data?.user_info?.id);
+  const authorHasFreelancerProfile = useHasFreelancerProfile(
+    data?.user_info?.id,
+  );
   const sessionUser = loggedUserInfoStore((state) => state.user);
 
   useRenderHtmlPlugin(ref.current);
@@ -220,14 +222,15 @@ const Index: FC<Props> = ({ data, initPage, hasAnswer, isLogged }) => {
             isLogged={isLogged}
             timelinePath={`/posts/${data.id}/timeline`}
           />
-          {authorHasFreelancerProfile && sessionUser?.id !== data?.user_info?.id && (
-            <div className="mt-2">
-              <HireMeButton
-                freelancerUserId={data?.user_info?.id}
-                freelancerDisplayName={data?.user_info?.display_name}
-              />
-            </div>
-          )}
+          {authorHasFreelancerProfile &&
+            sessionUser?.id !== data?.user_info?.id && (
+              <div className="mt-2">
+                <HireMeButton
+                  freelancerUserId={data?.user_info?.id}
+                  freelancerDisplayName={data?.user_info?.display_name}
+                />
+              </div>
+            )}
         </div>
       </div>
 
