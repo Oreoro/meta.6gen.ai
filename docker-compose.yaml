@@ -29,21 +29,26 @@ services:
       DB_USER: answer
       DB_PASSWORD: secret
       TIMEZONE: Asia/Karachi
+      ANSWER_STATIC_PATH: "/data/ui"
+      INSTALL_PORT: "8080"
+      SITE_ADDR: "0.0.0.0:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     volumes:
       - answer-uploads:/data/uploads
       - answer-i18n:/data/i18n
       - answer-conf:/data/conf
       - answer-cache:/data/cache
       # Mount local UI build directory for custom UI (overrides image UI)
-      - ./ui/build:/data/ui:ro
+      - ./ui/build:/data/ui:rw
     user: "0:0"
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         # Fix volume permissions on startup (run as root)
-        chown -R 10001:10001 /data/conf /data/cache /data/uploads /data/i18n 2>/dev/null || true
+        chown -R 10001:10001 /data/conf /data/cache /data/uploads /data/i18n /data/ui 2>/dev/null || true
+        chmod -R 755 /data/ui 2>/dev/null || true
         # Switch to non-root user and execute original entrypoint
         exec su -s /bin/sh appuser -c "/usr/bin/dumb-init -- /entrypoint.sh"
 
@@ -65,20 +70,9 @@ services:
       retries: 5
       start_period: 30s
 
-  db:
-    image: mariadb:10.11
-    environment:
-      MARIADB_ROOT_PASSWORD: secret
-      MARIADB_DATABASE: answer
-      MARIADB_USER: answer
-      MARIADB_PASSWORD: secret
-    volumes:
-      - db-data:/var/lib/mysql
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
-
 volumes:
   answer-uploads:
   answer-i18n:
-  answer-config:
-  answer-logs:
+  answer-conf:
+  answer-cache:
   db-data:

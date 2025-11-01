@@ -85,6 +85,18 @@ func (a *UIRouter) Register(r *gin.Engine, baseURLPath string) {
 
 			r.Static(baseURLPath+"/static", staticPath+"/static")
 			r.NoRoute(func(c *gin.Context) {
+				urlPath := c.Request.URL.Path
+				if len(baseURLPath) > 0 {
+					urlPath = strings.TrimPrefix(urlPath, baseURLPath)
+				}
+
+				// Handle manifest.json dynamically (not from static file)
+				if urlPath == "/manifest.json" {
+					a.siteInfoController.GetManifestJson(c)
+					return
+				}
+
+				// Serve index.html for all other routes
 				filePath := staticPath + "/index.html"
 				file, err := os.ReadFile(filePath)
 				if err != nil {
