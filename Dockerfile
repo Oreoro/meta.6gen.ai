@@ -63,8 +63,10 @@ COPY . .
 # Build backend Go application
 RUN make clean && make build
 
-# Build frontend UI
-RUN make ui
+# Build frontend UI (use npm directly instead of pnpm via make ui)
+WORKDIR ${BUILD_DIR}/ui
+RUN npm run build
+WORKDIR ${BUILD_DIR}
 
 # Prepare build artifacts (normalize binary name)
 RUN if [ -f "new_answer" ]; then mv new_answer answer; fi && \

@@ -28,7 +28,11 @@ COPY . .
 
 # Build the application
 RUN make clean build
-RUN make ui
+
+# Build frontend UI (use npm directly instead of pnpm via make ui)
+WORKDIR /app/ui
+RUN npm run build
+WORKDIR /app
 
 # Final stage
 FROM alpine:latest
