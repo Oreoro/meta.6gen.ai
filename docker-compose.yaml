@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-version: "3"
 services:
   answer:
     build:
@@ -24,14 +23,36 @@ services:
     ports:
       - '8080:8080'
     restart: on-failure
+    environment:
+      DB_TYPE: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: answer
+      DB_USER: answer
+      DB_PASSWORD: secret
+      TIMEZONE: Asia/Karachi
+    depends_on:
+      - db
     volumes:
       - answer-uploads:/data/uploads
       - answer-i18n:/data/i18n
       - answer-config:/data/config
       - answer-logs:/data/logs
 
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: answer
+      MARIADB_USER: answer
+      MARIADB_PASSWORD: secret
+    volumes:
+      - db-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
 volumes:
   answer-uploads:
   answer-i18n:
   answer-config:
   answer-logs:
+  db-data:

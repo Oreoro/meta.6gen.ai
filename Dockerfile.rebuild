@@ -14,17 +14,17 @@ RUN npm config set ignore-scripts true && \
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy all source code
-COPY . .
-
-# Install UI dependencies (skip prepare scripts)
+# Copy package files first for UI dependency caching
 WORKDIR /app/ui
 COPY ui/package*.json ./
+
+# Install UI dependencies (skip prepare scripts)
 RUN npm install --no-audit --no-fund --legacy-peer-deps --loglevel=error || \
     npm install --no-audit --no-fund --legacy-peer-deps --force --loglevel=error
 
-COPY ui/ ./
+# Copy all source code (including UI)
 WORKDIR /app
+COPY . .
 
 # Build the application
 RUN make clean build
