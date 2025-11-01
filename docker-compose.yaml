@@ -29,12 +29,8 @@ services:
       DB_USER: answer
       DB_PASSWORD: secret
       TIMEZONE: Asia/Karachi
-      INSTALL_PORT: "8080"
-      SITE_ADDR: "0.0.0.0:8080"
-      ANSWER_STATIC_PATH: "/data/ui"
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     volumes:
       - answer-uploads:/data/uploads
       - answer-i18n:/data/i18n
@@ -69,9 +65,20 @@ services:
       retries: 5
       start_period: 30s
 
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: answer
+      MARIADB_USER: answer
+      MARIADB_PASSWORD: secret
+    volumes:
+      - db-data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
 volumes:
   answer-uploads:
   answer-i18n:
-  answer-conf:
-  answer-cache:
+  answer-config:
+  answer-logs:
   db-data:
