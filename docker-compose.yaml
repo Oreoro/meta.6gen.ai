@@ -34,9 +34,9 @@ services:
     volumes:
       - answer-uploads:/data/uploads
       - answer-i18n:/data/i18n
-      - answer-config:/data/config
-      - answer-logs:/data/logs
-      # Mount local UI build directory for custom UI
+      - answer-conf:/data/conf
+      - answer-cache:/data/cache
+      # Mount local UI build directory for custom UI (overrides image UI)
       - ./ui/build:/data/ui:ro
 
   db:
@@ -53,6 +53,6 @@ services:
 volumes:
   answer-uploads:
   answer-i18n:
-  answer-config:
-  answer-logs:
+  answer-conf:
+  answer-cache:
   db-data:
