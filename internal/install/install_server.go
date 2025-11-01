@@ -56,9 +56,18 @@ func NewInstallHTTPServer() *gin.Engine {
 	_ = yaml.Unmarshal(configs.Config, c)
 
 	r.GET("/healthz", func(ctx *gin.Context) { ctx.String(200, "OK") })
-	r.StaticFS(c.UI.BaseURL+"/static", http.FS(&_resource{
-		fs: ui.Build,
-	}))
+	
+	// Check if ANSWER_STATIC_PATH is set (for mounted UI)
+	staticPath := os.Getenv("ANSWER_STATIC_PATH")
+	if staticPath != "" {
+		// Use mounted static files if available
+		r.Static(c.UI.BaseURL+"/static", staticPath+"/static")
+	} else {
+		// Fallback to embedded filesystem
+		r.StaticFS(c.UI.BaseURL+"/static", http.FS(&_resource{
+			fs: ui.Build,
+		}))
+	}
 
 	// read default config file and extract ui config
 	installApi := r.Group("")
