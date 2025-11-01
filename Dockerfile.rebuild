@@ -1,13 +1,14 @@
 FROM golang:1.23-alpine AS builder
 
 # Install build dependencies
-RUN apk --no-cache add build-base git bash nodejs npm
-
-# Install pnpm
-RUN npm install -g pnpm@9.7.0
+RUN apk --no-cache add build-base git bash nodejs npm python3 make
 
 # Set working directory
 WORKDIR /app
+
+# Configure npm to skip prepare scripts (avoid pnpm/QEMU issues)
+RUN npm config set ignore-scripts true && \
+    npm config set legacy-peer-deps true
 
 # Copy go mod files first for better caching
 COPY go.mod go.sum ./
@@ -16,8 +17,18 @@ RUN go mod download
 # Copy all source code
 COPY . .
 
+# Install UI dependencies (skip prepare scripts)
+WORKDIR /app/ui
+COPY ui/package*.json ./
+RUN npm install --no-audit --no-fund --legacy-peer-deps --loglevel=error || \
+    npm install --no-audit --no-fund --legacy-peer-deps --force --loglevel=error
+
+COPY ui/ ./
+WORKDIR /app
+
 # Build the application
 RUN make clean build
+RUN make ui
 
 # Final stage
 FROM alpine:latest
@@ -28,21 +39,23 @@ RUN apk --no-cache add bash ca-certificates curl dumb-init gettext openssh sqlit
 # Copy the built binary
 COPY --from=builder /app/answer /usr/bin/answer
 
-# Copy static files
-COPY --from=builder /app/ui/build /app/ui/build
-COPY --from=builder /app/i18n /app/i18n
-COPY --from=builder /app/script/entrypoint.sh /entrypoint.sh
+# Copy static files and data
+RUN mkdir -p /data/uploads /data/i18n /data/ui
+COPY --from=builder /app/ui/build /data/ui/
+COPY --from=builder /app/i18n /data/i18n/
+# Create entrypoint script
+RUN echo '#!/bin/sh' > /entrypoint.sh && \
+    echo 'exec /usr/bin/answer "$@"' >> /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
 # Set permissions
-RUN chmod 755 /entrypoint.sh /usr/bin/answer
-
-# Create data directory
-RUN mkdir -p /data/uploads && chmod 777 /data/uploads
+RUN chmod 755 /entrypoint.sh /usr/bin/answer && \
+    chown -R 10001:10001 /data 2>/dev/null || true
 
 # Set timezone
 ENV TZ=Asia/Karachi
 RUN ln -sf /usr/share/zoneinfo/Asia/Karachi /etc/localtime
 
 VOLUME /data
-EXPOSE 80
-ENTRYPOINT ["/entrypoint.sh"]
+EXPOSE 8080
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint.sh"]
