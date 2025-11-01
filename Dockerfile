@@ -81,23 +81,27 @@ RUN if [ -f "new_answer" ]; then mv new_answer answer; fi && \
     chmod 755 answer
 
 # Build plugins if script exists (plugins are optional, so we handle failures gracefully)
-# Note: build_plugin.sh uses 'set -e', so we need to handle failures carefully
-RUN if [ -f "script/build_plugin.sh" ] && [ -f "script/plugin_list" ] && [ -x "answer" ]; then \
+# Note: build_plugin.sh uses 'set -e' and requires pnpm, so we need to handle failures carefully
+# Skip plugin build if pnpm is not available (we're using npm-only build)
+RUN if [ -f "script/build_plugin.sh" ] && [ -f "script/plugin_list" ] && [ -x "answer" ] && command -v pnpm >/dev/null 2>&1; then \
         echo "Building plugins..." && \
-        set +e && \
-        bash script/build_plugin.sh && \
-        plugin_status=$? && \
-        set -e && \
-        if [ $plugin_status -eq 0 ] && [ -f "new_answer" ]; then \
+        (bash script/build_plugin.sh 2>&1 || echo "Plugin build failed, continuing without plugins") && \
+        if [ -f "new_answer" ]; then \
             echo "Plugin build successful, replacing binary" && \
             rm -f answer && \
             mv new_answer answer && \
             chmod 755 answer; \
         else \
-            echo "Plugin build skipped or failed (status: $plugin_status), continuing without plugins"; \
+            echo "Plugin build did not produce new binary, continuing without plugins"; \
         fi; \
     else \
-        echo "Skipping plugin build (script, plugin_list, or binary not found)"; \
+        if [ ! -f "script/build_plugin.sh" ] || [ ! -f "script/plugin_list" ]; then \
+            echo "Skipping plugin build (script or plugin_list not found)"; \
+        elif ! command -v pnpm >/dev/null 2>&1; then \
+            echo "Skipping plugin build (pnpm not available, using npm-only build)"; \
+        else \
+            echo "Skipping plugin build (binary not executable)"; \
+        fi; \
     fi
 
 # Create entrypoint script if it doesn't exist
