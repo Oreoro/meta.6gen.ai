@@ -79,8 +79,7 @@ const HireMeButton: React.FC<Props> = ({
         size="lg"
         centered
         keyboard={!loading}
-        backdrop={loading ? 'static' : true}
-      >
+        backdrop={loading ? 'static' : true}>
         <Modal.Header closeButton>
           <Modal.Title>
             {t('hire.modal_title', { name: freelancerDisplayName })}

@@ -69,7 +69,7 @@ const Index: React.FC = () => {
     },
   });
 
-  const [step, setStep] = useState(1);
+  const [step] = useState(1);
 
   const handleChange = (params: FormDataType) => {
     setFormData({ ...formData, ...params });
