@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 
 	"github.com/apache/answer/configs"
 	"github.com/apache/answer/internal/base/conf"
@@ -81,6 +82,21 @@ func WebPage(c *gin.Context) {
 	filePath := ""
 	var file []byte
 	var err error
+	
+	// Check if ANSWER_STATIC_PATH is set (for mounted UI)
+	staticPath := os.Getenv("ANSWER_STATIC_PATH")
+	if staticPath != "" {
+		filePath = staticPath + "/index.html"
+		file, err = os.ReadFile(filePath)
+		if err == nil {
+			c.Header("content-type", "text/html;charset=utf-8")
+			c.String(http.StatusOK, string(file))
+			return
+		}
+		log.Debugf("Could not read from ANSWER_STATIC_PATH (%s), trying embedded filesystem", filePath)
+	}
+	
+	// Fallback to embedded filesystem
 	filePath = "build/index.html"
 	c.Header("content-type", "text/html;charset=utf-8")
 	file, err = ui.Build.ReadFile(filePath)

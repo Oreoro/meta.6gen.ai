@@ -33,6 +33,10 @@ function App() {
   }
   const router = createBrowserRouter(routes, {
     basename: process.env.REACT_APP_BASE_URL,
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
   });
   return (
     <FreelancerProvider>

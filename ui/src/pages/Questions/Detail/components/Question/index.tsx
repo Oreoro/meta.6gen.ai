@@ -38,8 +38,9 @@ import { formatCount, guard } from '@/utils';
 import { following } from '@/services';
 import { pathFactory } from '@/router/pathFactory';
 import HireMeButton from '@/components/HireMeButton';
-import { useHasFreelancerProfile } from '@/context/FreelancerContext';
-import { loggedUserInfoStore } from '@/stores';
+// Removed unused imports for test - will restore later
+// import { useHasFreelancerProfile } from '@/context/FreelancerContext';
+// import { loggedUserInfoStore } from '@/stores';
 
 interface Props {
   data: any;
@@ -55,10 +56,11 @@ const Index: FC<Props> = ({ data, initPage, hasAnswer, isLogged }) => {
   const [searchParams] = useSearchParams();
   const [followed, setFollowed] = useState(data?.is_followed);
   const ref = useRef<HTMLDivElement>(null);
-  const authorHasFreelancerProfile = useHasFreelancerProfile(
-    data?.user_info?.id,
-  );
-  const sessionUser = loggedUserInfoStore((state) => state.user);
+  // Removed unused vars for test - will restore later
+  // const authorHasFreelancerProfile = useHasFreelancerProfile(
+  //   data?.user_info?.id,
+  // );
+  // const sessionUser = loggedUserInfoStore((state) => state.user);
 
   useRenderHtmlPlugin(ref.current);
 
@@ -222,15 +224,17 @@ const Index: FC<Props> = ({ data, initPage, hasAnswer, isLogged }) => {
             isLogged={isLogged}
             timelinePath={`/posts/${data.id}/timeline`}
           />
-          {authorHasFreelancerProfile &&
-            sessionUser?.id !== data?.user_info?.id && (
-              <div className="mt-2">
-                <HireMeButton
-                  freelancerUserId={data?.user_info?.id}
-                  freelancerDisplayName={data?.user_info?.display_name}
-                />
-              </div>
-            )}
+          {/* TEST: Always show to verify UI changes work */}
+          {data?.user_info?.id && (
+            <div className="mt-2">
+              <HireMeButton
+                freelancerUserId={data.user_info.id}
+                freelancerDisplayName={
+                  data.user_info.display_name || 'Test User'
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
 

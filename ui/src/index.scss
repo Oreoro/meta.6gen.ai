@@ -92,8 +92,11 @@ img[src=''] {
   color: $gray-700;
   font-weight: 400;
   border: 1px solid transparent;
+  transition: all 0.2s ease-in-out;
   &:hover {
     background: $gray-300;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -135,6 +138,97 @@ img[src=''] {
 .btn-no-border:active:focus {
   border: none;
   box-shadow: none;
+}
+
+// Enhanced button styles with smooth transitions
+.btn {
+  transition: all 0.2s ease-in-out;
+  &:hover {
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Enhanced card styling for question lists
+.list-group-item {
+  transition: all 0.2s ease-in-out;
+  border-left: 3px solid transparent;
+  &:hover {
+    border-left-color: var(--bs-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateX(2px);
+  }
+}
+
+// Better focus states for accessibility
+.btn:focus-visible,
+.form-control:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: 2px;
+}
+
+// Welcome card enhancement
+.welcome-card {
+  background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.05) 0%, rgba(var(--bs-primary-rgb), 0.02) 100%);
+  transition: all 0.3s ease-in-out;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  }
+}
+
+// Improved spacing for question cards
+.question-tags {
+  margin-bottom: 0.75rem !important;
+}
+
+// Enhanced loading states
+.skeleton-loader {
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+// Better mobile responsiveness
+@media (max-width: 768px) {
+  .list-group-item:hover {
+    transform: none;
+    border-left-width: 2px;
+  }
+  
+  .btn:hover {
+    transform: none;
+  }
+}
+
+// Enhanced card shadows for depth
+.card {
+  transition: box-shadow 0.3s ease-in-out;
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+// Smooth scroll behavior
+html {
+  scroll-behavior: smooth;
+}
+
+// Improved link styles
+.link-dark {
+  transition: color 0.2s ease-in-out;
+  &:hover {
+    color: var(--bs-primary) !important;
+  }
 }
 
 .pointer:hover {

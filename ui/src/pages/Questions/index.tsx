@@ -85,28 +85,32 @@ const Questions: FC = () => {
       <Col className="page-right-side mt-4 mt-xl-0">
         <CustomSidebar />
         {!loggedUser.username && (
-          <div className="card mb-4">
-            <div className="card-body">
-              <h5 className="card-title">
+          <div className="card mb-4 shadow-sm border-0 welcome-card">
+            <div className="card-body p-4">
+              <h5 className="card-title mb-3 fw-bold">
                 {t2('website_welcome', {
                   site_name: siteInfo.name,
                 })}
               </h5>
-              <p className="card-text">{siteInfo.description}</p>
-              <Link
-                to={userCenter.getLoginUrl()}
-                className="btn btn-primary"
-                onClick={floppyNavigation.handleRouteLinkClick}>
-                {t('login', { keyPrefix: 'btns' })}
-              </Link>
-              {loginSetting.allow_new_registrations ? (
+              <p className="card-text text-muted mb-4">
+                {siteInfo.description}
+              </p>
+              <div className="d-flex flex-wrap gap-2">
                 <Link
-                  to={userCenter.getSignUpUrl()}
-                  className="btn btn-link ms-2"
+                  to={userCenter.getLoginUrl()}
+                  className="btn btn-primary px-4"
                   onClick={floppyNavigation.handleRouteLinkClick}>
-                  {t('signup', { keyPrefix: 'btns' })}
+                  {t('login', { keyPrefix: 'btns' })}
                 </Link>
-              ) : null}
+                {loginSetting.allow_new_registrations ? (
+                  <Link
+                    to={userCenter.getSignUpUrl()}
+                    className="btn btn-outline-primary px-4"
+                    onClick={floppyNavigation.handleRouteLinkClick}>
+                    {t('signup', { keyPrefix: 'btns' })}
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </div>
         )}

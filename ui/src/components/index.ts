@@ -64,6 +64,7 @@ import CardBadge from './CardBadge';
 import PinList from './PinList';
 import MobileSideNav from './MobileSideNav';
 import AdminSideNav from './AdminSideNav';
+import HireMeButton from './HireMeButton';
 
 export {
   Avatar,
@@ -115,5 +116,6 @@ export {
   PinList,
   MobileSideNav,
   AdminSideNav,
+  HireMeButton,
 };
 export type { EditorRef, JSONSchema, UISchema };

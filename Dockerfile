@@ -72,6 +72,9 @@ RUN if [ ! -f "answer" ]; then \
     chmod 755 answer
 
 # Build frontend UI (use npm directly instead of pnpm via make ui)
+# We build UI here to embed it in the image (needed for install server)
+# At runtime, docker-compose mount ./ui/build:/data/ui will override this
+# This gives us: embedded UI for install phase + mounted UI for runtime hot reload
 WORKDIR ${BUILD_DIR}/ui
 RUN npm run build
 WORKDIR ${BUILD_DIR}
@@ -113,6 +116,9 @@ RUN if [ ! -f "script/entrypoint.sh" ]; then \
     fi
 
 # Create runtime directories and copy assets
+# Copy UI build to /data/ui (embedded in image for install server)
+# At runtime, docker-compose mount ./ui/build:/data/ui will override this
+# This ensures: install server works + runtime uses mounted UI for hot reload
 RUN mkdir -p /data/uploads /data/i18n /data/ui && \
     if [ -d "i18n" ]; then cp -r i18n/*.yaml /data/i18n/ 2>/dev/null || true; fi && \
     if [ -d "ui/build" ]; then \
