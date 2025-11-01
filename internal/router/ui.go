@@ -22,11 +22,12 @@ package router
 import (
 	"embed"
 	"fmt"
-	"github.com/apache/answer/plugin"
 	"io/fs"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/apache/answer/plugin"
 
 	"github.com/apache/answer/internal/controller"
 	"github.com/apache/answer/internal/service/siteinfo_common"
@@ -82,10 +83,17 @@ func (a *UIRouter) Register(r *gin.Engine, baseURLPath string) {
 		} else {
 			log.Debugf("registering static path %s", staticPath)
 
-			r.LoadHTMLGlob(staticPath + "/*.html")
 			r.Static(baseURLPath+"/static", staticPath+"/static")
 			r.NoRoute(func(c *gin.Context) {
-				c.HTML(http.StatusOK, "index.html", gin.H{})
+				filePath := staticPath + "/index.html"
+				file, err := os.ReadFile(filePath)
+				if err != nil {
+					log.Error(err)
+					c.Status(http.StatusNotFound)
+					return
+				}
+				c.Header("content-type", "text/html; charset=utf-8")
+				c.String(http.StatusOK, string(file))
 			})
 
 			// return immediately if the static path is set

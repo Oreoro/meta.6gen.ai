@@ -63,8 +63,10 @@ COPY . .
 # Build backend Go application
 RUN make clean && make build
 
-# Build frontend UI
-RUN make ui
+# Build frontend UI (use npm directly instead of pnpm via make ui)
+WORKDIR ${BUILD_DIR}/ui
+RUN npm run build
+WORKDIR ${BUILD_DIR}
 
 # Prepare build artifacts (normalize binary name)
 RUN if [ -f "new_answer" ]; then mv new_answer answer; fi && \
@@ -131,6 +133,10 @@ COPY --from=golang-builder --chown=10001:10001 /data /data
 # Copy entrypoint script (always exists after builder stage preparation)
 COPY --from=golang-builder --chown=10001:10001 /go/src/${PACKAGE}/script/entrypoint.sh /entrypoint.sh
 RUN chmod 755 /entrypoint.sh
+
+# Copy verification script (for host-side verification, also included in image for reference)
+COPY --from=golang-builder --chown=10001:10001 /go/src/${PACKAGE}/verify_custom_ui.sh /usr/local/bin/verify_custom_ui.sh
+RUN chmod 755 /usr/local/bin/verify_custom_ui.sh
 
 # Switch to non-root user
 USER 10001:10001
