@@ -38,6 +38,8 @@ services:
       - answer-i18n:/data/i18n
       - answer-config:/data/config
       - answer-logs:/data/logs
+      # Mount local UI build directory for custom UI
+      - ./ui/build:/data/ui:ro
 
   db:
     image: mariadb:10.11
